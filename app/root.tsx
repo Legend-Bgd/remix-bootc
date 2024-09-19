@@ -2,12 +2,9 @@ import type { LinksFunction } from "@remix-run/node";
 // existing imports
 
 import appStylesHref from "./app.css?url";
-
-export const links: LinksFunction = () => [
-  { rel: "stylesheet", href: appStylesHref },
-];
-
 import { json } from "@remix-run/node";
+import { loader } from "./routes/contacts.$contactId";
+import { createEmptyContact, getContact } from "./data";
 
 import {
   Form,
@@ -20,16 +17,25 @@ import {
   ScrollRestoration,
 } from "@remix-run/react";
 
-import {getContacts} from "./data"
+import { getContacts } from "./data";
 
-export const loader = async() => {
-  const contacts = await getContacts()
+
+export const action = async() =>{
+  const contact = createEmptyContact();
+  return json({contact})
+}
+
+export const links: LinksFunction = () => [
+  { rel: "stylesheet", href: appStylesHref },
+];
+
+export const loader = async () => {
+  const contacts = await getContacts();
   return json({contacts})
 }
 
-
 export default function App() {
-  const {contacts} = useLoaderData<typeof loader>();
+  const { contacts } = useLoaderData<typeof loader>();
 
   return (
     <html lang="en">
@@ -42,11 +48,8 @@ export default function App() {
       <body>
         <div id="sidebar">
           <h1>Remix Contacts</h1>
-          <div>
-            <div id="detail">
-              <Outlet />
-            </div>
-            <Form id="search-form" role="search">
+       <div>
+       <Form id="search-form" role="search">
               <input
                 id="q"
                 aria-label="Search contacts"
@@ -59,32 +62,35 @@ export default function App() {
             <Form method="post">
               <button type="submit">New</button>
             </Form>
+       </div>
+          <nav>
+                {contacts.length ? (
+                  <ul>
+                    {contacts.map((contact) => (
+                      <li key={contact.id}>
+                        <Link to={`contacts/${contact.id}`}>
+                          {contact.first || contact.last ? (
+                            <>
+                              {contact.first} {contact.last}
+                            </>
+                          ) : (
+                            <i>No Name</i>
+                          )}{" "}
+                          {contact.favorite ? <span>★</span> : null}
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p>
+                    <i>No Contacts</i>
+                  </p>
+                )}
+              </nav>
           </div>
-         <nav>
-          {contacts.length ? (
-            <ul>
-              {contacts.map((contact) =>(
-                <li key={contact.id}>
-                  <Link to={`contacts/${contact.id}`}>
-                    {contact.first || contact.last ? (
-                      <>{contact.first} {contact.last}</>
-                    ) : (
-                      <i>No Name</i>
-                    )} {" "} 
-                    {contact.favorite ? (
-                      <span>★</span>
-                    ): null}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          ): (
-            <p>
-              <i>No Contacts</i>
-            </p>
-          )}
-         </nav>
-        </div>
+            <div id="detail">
+              <Outlet />
+            </div>
 
         <ScrollRestoration />
         <Scripts />
